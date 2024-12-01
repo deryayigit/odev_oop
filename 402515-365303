@@ -1,0 +1,145 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <iomanip>
+using namespace std;
+
+#define N 125
+
+class Student {
+private:
+    string* name;
+    string* studentNo;
+    float* midterm;
+    float* secondExam;
+    float* assignment;
+    float* final;
+    int* attendance;
+    float* avrg;
+
+    int studentCount; // Dinamik olarak öğrenci sayısını takip et
+
+public:
+    Student();
+    ~Student();
+    void readFromCSV(const string& filename);
+    void average();
+    void print(int a = -1, const string& fl = "");
+};
+
+Student::Student() {
+    name = new string[N];
+    studentNo = new string[N];
+    midterm = new float[N];
+    secondExam = new float[N];
+    assignment = new float[N];
+    final = new float[N];
+    attendance = new int[N];
+    avrg = new float[N];
+    studentCount = 0; // Başlangıçta öğrenci sayısı sıfır
+}
+
+Student::~Student() {
+    delete[] name;
+    delete[] studentNo;
+    delete[] midterm;
+    delete[] secondExam;
+    delete[] assignment;
+    delete[] final;
+    delete[] attendance;
+    delete[] avrg;
+}
+
+void Student::readFromCSV(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error: Could not open file " << filename << endl;
+        return;
+    }
+
+    string line;
+    getline(file, line); // Başlık satırını atla
+
+    int i = 0;
+    while (getline(file, line) && i < N) {
+        stringstream ss(line);
+        string temp;
+
+        getline(ss, name[i], ',');
+        getline(ss, studentNo[i], ',');
+        getline(ss, temp, ',');
+        midterm[i] = stof(temp);
+        getline(ss, temp, ',');
+        secondExam[i] = stof(temp);
+        getline(ss, temp, ',');
+        assignment[i] = stof(temp);
+        getline(ss, temp, ',');
+        final[i] = stof(temp);
+        getline(ss, temp, '\n');
+        attendance[i] = stoi(temp);
+
+        i++;
+    }
+
+    studentCount = i; // Okunan öğrenci sayısını kaydet
+    file.close();
+}
+
+void Student::average() {
+    for (int i = 0; i < studentCount; i++) {
+        avrg[i] = midterm[i] * 0.2 + secondExam[i] * 0.2 + assignment[i] * 0.2 + final[i] * 0.4;
+    }
+}
+
+void Student::print(int a, const string& fl) {
+    ofstream file;
+    if (!fl.empty()) {
+        file.open(fl);
+        if (!file.is_open()) {
+            cerr << "Error writing to file!" << endl;
+            return;
+        }
+    }
+
+    ostream& output = fl.empty() ? cout : file;
+
+    // Formatlı başlık yazdır
+    output << left << setw(25) << "Öğrenci Adı" << right << setw(10) << "Numara"
+           << right << setw(10) << "Ortalama" << endl;
+    output << string(45, '-') << endl;
+
+    for (int i = 0; i < studentCount; i++) {
+        if ((a == 0 && avrg[i] < 50) || (a == 1 && avrg[i] >= 50) || a == -1) {
+            output << left << setw(25) << name[i]
+                   << right << setw(10) << studentNo[i]
+                   << right << setw(10) << fixed << setprecision(2) << avrg[i] << endl;
+        }
+    }
+
+    if (file.is_open()) {
+        file.close();
+    }
+}
+
+int main() {
+    Student student;
+    
+    // Dosya yolunun doğru olup olmadığını kontrol et
+    student.readFromCSV("input.csv");
+
+    // Kullanıcıdan listeyi nasıl görmek istediğine dair bir değer al
+    int a;
+    cout << "Öğrenci listesini nasıl görmek istersiniz?" << endl;
+    cout << "0: Geçemeyenler, 1: Geçenler, -1: Tümü" << endl;
+    cout << "Bir seçenek girin: ";
+    cin >> a;
+
+    // Ortalama hesapla
+    student.average();
+
+    // Öğrencileri ekrana veya dosyaya yazdır
+    student.print(a, "");
+
+    return 0;
+}
